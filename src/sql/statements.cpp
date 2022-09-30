@@ -384,11 +384,15 @@ SetOperation::~SetOperation() {
 }
 
 // SetStatement
-SetStatement::SetStatement(SetStmtType type)
+SetStatement::SetStatement()
   : SQLStatement(kStmtSet)
-  , set_type(type)
-  , b_autocommit(true)
+  , equal_expr(nullptr)
 { }
+
+SetStatement::~SetStatement() 
+{
+  delete equal_expr;
+}
 
 
 

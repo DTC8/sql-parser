@@ -205,7 +205,6 @@
     %token TRUE FALSE BOOLEAN
     %token TRANSACTION BEGIN COMMIT ROLLBACK
     %token NOWAIT SKIP LOCKED SHARE
-    %token AUTOCOMMIT
 
     /*********************************
      ** Non-Terminal types (http://www.gnu.org/software/bison/manual/html_node/Type-Decl.html)
@@ -235,7 +234,7 @@
     %type <join_type>              opt_join_type
     %type <table>                  opt_from_clause from_clause table_ref table_ref_atomic table_ref_name nonjoin_table_ref_atomic
     %type <table>                  join_clause table_ref_name_no_alias
-    %type <expr>                   expr operand scalar_expr unary_expr binary_expr logic_expr exists_expr extract_expr cast_expr
+    %type <expr>                   expr operand scalar_expr unary_expr binary_expr logic_expr exists_expr extract_expr cast_expr equal_expr
     %type <expr>                   function_expr between_expr expr_alias param_expr
     %type <expr>                   column_name literal int_literal num_literal identifier_literal string_literal bool_literal date_literal interval_literal
     %type <expr>                   comp_expr opt_where join_condition opt_having case_expr case_list in_expr hint
@@ -495,9 +494,9 @@ show_statement : SHOW TABLES { $$ = new ShowStatement(kShowTables); }
 /******************************
  * set autocommit=0;
  ******************************/
-set_statement : SET AUTOCOMMIT '=' INTVAL {
-  $$ = new SetStatement(kSetAutocommit);
-  $$->b_autocommit = $4;
+set_statement : SET equal_expr {
+  $$ = new SetStatement();
+  $$->equal_expr = $2;
 };
 
 /******************************
@@ -992,6 +991,13 @@ function_expr : IDENTIFIER '(' ')' { $$ = Expr::makeFunctionRef($1, new std::vec
 extract_expr : EXTRACT '(' datetime_field FROM expr ')' { $$ = Expr::makeExtract($3, $5); };
 
 cast_expr : CAST '(' expr AS column_type ')' { $$ = Expr::makeCast($3, $5); };
+
+equal_expr : IDENTIFIER '=' INTVAL { 
+  $$ = new Expr(kExprEqual);
+  $$->name = $1;
+  $$->data_type = INT;
+  $$->ival = $3;
+};
 
 datetime_field : SECOND { $$ = kDatetimeSecond; }
 | MINUTE { $$ = kDatetimeMinute; }

@@ -2,15 +2,15 @@
 #define SQLPARSER_SET_STATEMENT_H
 
 #include "SQLStatement.h"
+#include "Expr.h"
+
 namespace hsql {
-enum SetStmtType { kDefault = -1 , kSetAutocommit };
 
 struct SetStatement : SQLStatement {
-    SetStatement(SetStmtType type);
-    ~SetStatement() {};
+    SetStatement();
+    ~SetStatement();
 
-    SetStmtType set_type;
-    bool b_autocommit;
+    Expr* equal_expr;
 };
 
 }// namespace hsql
