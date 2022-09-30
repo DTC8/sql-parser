@@ -239,7 +239,7 @@
     %type <expr>                   column_name literal int_literal num_literal identifier_literal string_literal bool_literal date_literal interval_literal
     %type <expr>                   comp_expr opt_where join_condition opt_having case_expr case_list in_expr hint
     %type <expr>                   array_expr array_index null_literal
-    %type <limit>                  opt_limit opt_top
+    %type <limit>                  opt_limit opt_top delete_limit
     %type <order>                  order_desc
     %type <order_type>             opt_order_type
     %type <datetime_field>         datetime_field datetime_field_plural duration_field
@@ -684,6 +684,13 @@ delete_statement : DELETE FROM table_name opt_where {
   $$->schema = $3.schema;
   $$->tableName = $3.name;
   $$->expr = $4;
+}
+| DELETE FROM table_name opt_where delete_limit {
+  $$ = new DeleteStatement();
+  $$->schema = $3.schema;
+  $$->tableName = $3.name;
+  $$->expr = $4;
+  $$->limit = $5;
 };
 
 truncate_statement : TRUNCATE table_name {
@@ -889,6 +896,9 @@ opt_order_type : ASC { $$ = kOrderAsc; }
 opt_top : TOP int_literal { $$ = new LimitDescription($2, nullptr); }
 | /* empty */ { $$ = nullptr; };
 
+delete_limit : LIMIT expr { $$ = new LimitDescription($2, nullptr); }
+| /* empty */ { $$ = nullptr; };
+
 opt_limit : LIMIT expr { $$ = new LimitDescription($2, nullptr); }
 | OFFSET expr { $$ = new LimitDescription(nullptr, $2); }
 | LIMIT expr OFFSET expr { $$ = new LimitDescription($2, $4); }
@@ -995,7 +1005,7 @@ cast_expr : CAST '(' expr AS column_type ')' { $$ = Expr::makeCast($3, $5); };
 equal_expr : IDENTIFIER '=' INTVAL { 
   $$ = new Expr(kExprEqual);
   $$->name = $1;
-  $$->data_type = INT;
+  $$->data_type = DataType::INT;
   $$->ival = $3;
 };
 

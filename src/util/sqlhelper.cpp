@@ -389,8 +389,33 @@ void printStatementInfo(const SQLStatement* stmt) {
       break;
     case kStmtSet:
       {
-        printf("set type%d , value:%d" , ((const SetStatement*)stmt)->set_type 
-        , ((const SetStatement*)stmt)->b_autocommit);
+        switch (((const SetStatement*)stmt)->equal_expr->data_type)
+        {
+        case DataType::INT:
+          {
+            printf("set value name:%s ,value:%ld\n" 
+              , ((const SetStatement*)stmt)->equal_expr->name
+              , ((const SetStatement*)stmt)->equal_expr->ival);
+          }
+          break;
+        default:
+          {
+            printf("no support yet");
+          }
+          break;
+        }
+      }
+      break;
+    case kStmtDelete:
+      {
+        printf("delete dbname:%s , tbname:%s \n"
+        , ((const DeleteStatement*)stmt)->schema
+        , ((const DeleteStatement*)stmt)->tableName);
+
+        if (((const DeleteStatement*)stmt)->limit != nullptr) {
+          printf("limit:");
+          printExpression(((const DeleteStatement*)stmt)->limit->limit, 0);
+        }
       }
       break;
     default:
