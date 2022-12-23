@@ -22,6 +22,7 @@ static thread_local std::stringstream strbuf;
 
 %}
 %x singlequotedstring
+%x doublequotedstring
 
 /***************************
  ** Section 2: Rules
@@ -256,12 +257,6 @@ CHARACTER[ \t\n]+VARYING TOKEN(CHARACTER_VARYING)
   return SQL_INTVAL;
 }
 
-\"[^\"\n]+\" {
-  // Crop the leading and trailing quote char
-  yylval->sval = hsql::substr(yytext, 1, strlen(yytext)-1);
-  return SQL_STRING;
-}
-
 [A-Za-z][A-Za-z0-9_]* {
   yylval->sval = strdup(yytext);
   return SQL_IDENTIFIER;
@@ -271,6 +266,23 @@ CHARACTER[ \t\n]+VARYING TOKEN(CHARACTER_VARYING)
   yylval->sval = hsql::substr(yytext, 1, strlen(yytext)-1);
   return SQL_IDENTIFIER;
 }
+
+\"                                  { 
+  BEGIN doublequotedstring; 
+  strbuf.clear(); strbuf.str("");
+}  // Clear strbuf manually, see #170 
+<doublequotedstring>[^\"\\\"]+      { 
+  strbuf << yytext; 
+}
+<doublequotedstring>\\\"|\"\"+      { 
+  strbuf << '"';
+}
+<doublequotedstring>\"           {
+    BEGIN 0; 
+    yylval->sval = strdup(strbuf.str().c_str()); 
+    return SQL_STRING;
+  }
+<doublequotedstring><<EOF>>       { fprintf(stderr, "[SQL-Lexer-Error] Unterminated string\n"); return 0; }
 
 \'                          { BEGIN singlequotedstring; strbuf.clear(); strbuf.str(""); }  // Clear strbuf manually, see #170
 <singlequotedstring>\'\'    { strbuf << '\''; }
